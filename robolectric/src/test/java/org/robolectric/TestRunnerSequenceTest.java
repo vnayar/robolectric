@@ -1,23 +1,24 @@
 package org.robolectric;
 
+import static org.assertj.core.api.Assertions.fail;
+import static org.junit.Assert.assertTrue;
+import static org.robolectric.util.TestUtil.resourceFile;
+
 import android.app.Application;
+
 import org.junit.Test;
 import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.model.InitializationError;
 import org.robolectric.annotation.Config;
-import org.robolectric.internal.bytecode.InstrumentationConfiguration;
 import org.robolectric.internal.SdkEnvironment;
+import org.robolectric.internal.bytecode.InstrumentationConfiguration;
 import org.robolectric.manifest.AndroidManifest;
 import org.robolectric.res.FsFile;
 import org.robolectric.util.Transcript;
 
 import java.lang.reflect.Method;
-
-import static org.assertj.core.api.Assertions.fail;
-import static org.junit.Assert.assertTrue;
-import static org.robolectric.util.TestUtil.resourceFile;
 
 public class TestRunnerSequenceTest {
   public static class StateHolder {
@@ -47,7 +48,10 @@ public class TestRunnerSequenceTest {
   @Test public void whenNoAppManifest_shouldRunThingsInTheRightOrder() throws Exception {
     StateHolder.transcript = new Transcript();
     assertNoFailures(run(new Runner(SimpleTest.class) {
-      @Override protected AndroidManifest createAppManifest(FsFile manifestFile, FsFile resDir, FsFile assetDir, String packageName) {
+      // @Override protected AndroidManifest createAppManifest(FsFile manifestFile, FsFile resDir, FsFile assetDir, String packageName) {
+      //   return null;
+      // }
+      @Override protected AndroidManifest getAppManifest(Config config) {
         return null;
       }
     }));
@@ -105,8 +109,13 @@ public class TestRunnerSequenceTest {
           .build();
     }
 
+    // @Override
+    // protected AndroidManifest createAndroidManifest(FsFile manifestFile, FsFile resDir, FsFile assetDir, String packageName) {
+    //   return new AndroidManifest(resourceFile("TestAndroidManifest.xml"), resourceFile("res"), resourceFile("assets"));
+    // }
+
     @Override
-    protected AndroidManifest createAppManifest(FsFile manifestFile, FsFile resDir, FsFile assetDir, String packageName) {
+    protected AndroidManifest getAppManifest(Config config) {
       return new AndroidManifest(resourceFile("TestAndroidManifest.xml"), resourceFile("res"), resourceFile("assets"));
     }
 

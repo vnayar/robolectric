@@ -1,27 +1,5 @@
 package org.robolectric.manifest;
 
-import android.Manifest;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.robolectric.RobolectricTestRunner;
-import org.robolectric.annotation.Config;
-import org.robolectric.res.Fs;
-import org.robolectric.res.FsFile;
-import org.robolectric.res.ResourcePath;
-import org.robolectric.test.TemporaryFolder;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-
 import static android.content.pm.ApplicationInfo.FLAG_ALLOW_BACKUP;
 import static android.content.pm.ApplicationInfo.FLAG_ALLOW_CLEAR_USER_DATA;
 import static android.content.pm.ApplicationInfo.FLAG_ALLOW_TASK_REPARENTING;
@@ -42,6 +20,29 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.util.TestUtil.*;
+
+import android.Manifest;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.robolectric.RobolectricTestRunner;
+import org.robolectric.annotation.Config;
+import org.robolectric.res.Fs;
+import org.robolectric.res.FsFile;
+import org.robolectric.res.ResourcePath;
+import org.robolectric.test.TemporaryFolder;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(manifest = Config.NONE)
@@ -435,15 +436,15 @@ public class AndroidManifestTest {
     }
   }
 
-  @Test
-  public void shouldLoadLibraryManifests() throws Exception {
-    AndroidManifest manifest = newConfig("TestAndroidManifest.xml");
-    List<FsFile> libraries = new ArrayList<>();
-    libraries.add(resourceFile("lib1"));
-    manifest.setLibraryDirectories(libraries);
-
-    List<AndroidManifest> libraryManifests = manifest.getLibraryManifests();
-    assertEquals(1, libraryManifests.size());
-    assertEquals("org.robolectric.lib1", libraryManifests.get(0).getPackageName());
-  }
+  // @Test
+  // public void shouldLoadLibraryManifests() throws Exception {
+  //   AndroidManifest manifest = newConfig("TestAndroidManifest.xml");
+  //   List<FsFile> libraries = new ArrayList<>();
+  //   libraries.add(resourceFile("lib1"));
+  //   manifest.setLibraryDirectories(libraries);
+  //
+  //   List<AndroidManifest> libraryManifests = manifest.getLibraryManifests();
+  //   assertEquals(1, libraryManifests.size());
+  //   assertEquals("org.robolectric.lib1", libraryManifests.get(0).getPackageName());
+  // }
 }

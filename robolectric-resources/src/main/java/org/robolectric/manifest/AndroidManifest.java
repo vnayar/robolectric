@@ -1,28 +1,5 @@
 package org.robolectric.manifest;
 
-import android.app.Activity;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import org.robolectric.annotation.Config;
-import org.robolectric.res.FsFile;
-import org.robolectric.res.ResourceLoader;
-import org.robolectric.res.ResourcePath;
-import org.w3c.dom.Document;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
 import static android.content.pm.ApplicationInfo.FLAG_ALLOW_BACKUP;
 import static android.content.pm.ApplicationInfo.FLAG_ALLOW_CLEAR_USER_DATA;
 import static android.content.pm.ApplicationInfo.FLAG_ALLOW_TASK_REPARENTING;
@@ -39,9 +16,34 @@ import static android.content.pm.ApplicationInfo.FLAG_SUPPORTS_SMALL_SCREENS;
 import static android.content.pm.ApplicationInfo.FLAG_TEST_ONLY;
 import static android.content.pm.ApplicationInfo.FLAG_VM_SAFE_MODE;
 
-public class AndroidManifest {
-  public static final String DEFAULT_MANIFEST_NAME = "AndroidManifest.xml";
+import android.app.Activity;
 
+import org.robolectric.res.FsFile;
+import org.robolectric.res.ResourceLoader;
+import org.robolectric.res.ResourcePath;
+import org.w3c.dom.Document;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
+/**
+ * A wrapper for an Android App Manifest, which represents information about one's App to an Android system.
+ * @see {@link https://developer.android.com/guide/topics/manifest/manifest-intro.html}
+ */
+public class AndroidManifest {
   private final FsFile androidManifestFile;
   private final FsFile resDirectory;
   private final FsFile assetsDirectory;
@@ -65,8 +67,7 @@ public class AndroidManifest {
   private final Map<String, ActivityData> activityDatas = new LinkedHashMap<>();
   private final List<String> usedPermissions = new ArrayList<>();
   private MetaData applicationMetaData;
-  private List<FsFile> libraryDirectories;
-  private List<AndroidManifest> libraryManifests;
+  private List<AndroidManifest> libraryManifests = new ArrayList<>();
 
   /**
    * Creates a Robolectric configuration using specified locations.
@@ -521,84 +522,13 @@ public class AndroidManifest {
     return providers;
   }
 
-  public void setLibraryDirectories(List<FsFile> libraryDirectories) {
-    this.libraryDirectories = libraryDirectories;
-  }
-
-  protected void createLibraryManifests() {
-    libraryManifests = new ArrayList<>();
-    if (libraryDirectories == null) {
-      libraryDirectories = findLibraries();
-    }
-
-    for (FsFile libraryBaseDir : libraryDirectories) {
-      AndroidManifest libraryManifest = createLibraryAndroidManifest(libraryBaseDir);
-      libraryManifest.createLibraryManifests();
-      libraryManifests.add(libraryManifest);
-    }
-  }
-
-  protected List<FsFile> findLibraries() {
-    FsFile baseDir = getBaseDir();
-    List<FsFile> libraryBaseDirs = new ArrayList<>();
-
-    final Properties properties = getProperties(baseDir.join("project.properties"));
-    Properties overrideProperties = getProperties(baseDir.join("test-project.properties"));
-    properties.putAll(overrideProperties);
-
-    int libRef = 1;
-    String lib;
-    while ((lib = properties.getProperty("android.library.reference." + libRef)) != null) {
-      FsFile libraryBaseDir = baseDir.join(lib);
-      if (libraryBaseDir.isDirectory()) {
-        // Ignore directories without any files
-        FsFile[] libraryBaseDirFiles = libraryBaseDir.listFiles();
-        if (libraryBaseDirFiles != null && libraryBaseDirFiles.length > 0) {
-          libraryBaseDirs.add(libraryBaseDir);
-        }
-      }
-
-      libRef++;
-    }
-    return libraryBaseDirs;
-  }
-
-  protected FsFile getBaseDir() {
-    return getResDirectory().getParent();
-  }
-
-  protected AndroidManifest createLibraryAndroidManifest(FsFile libraryBaseDir) {
-    return new AndroidManifest(libraryBaseDir.join(DEFAULT_MANIFEST_NAME), libraryBaseDir.join(Config.DEFAULT_RES_FOLDER), libraryBaseDir.join(Config.DEFAULT_ASSET_FOLDER));
+  public void setLibraryManifests(List<AndroidManifest> libraryManifests) {
+    this.libraryManifests = libraryManifests;
   }
 
   public List<AndroidManifest> getLibraryManifests() {
-    if (libraryManifests == null) createLibraryManifests();
+    assert(libraryManifests != null);
     return Collections.unmodifiableList(libraryManifests);
-  }
-
-  private static Properties getProperties(FsFile propertiesFile) {
-    Properties properties = new Properties();
-
-    // return an empty Properties object if the propertiesFile does not exist
-    if (!propertiesFile.exists()) return properties;
-
-    InputStream stream;
-    try {
-      stream = propertiesFile.getInputStream();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-
-    try {
-      try {
-        properties.load(stream);
-      } finally {
-        stream.close();
-      }
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    return properties;
   }
 
   public FsFile getResDirectory() {
@@ -622,7 +552,7 @@ public class AndroidManifest {
     parseAndroidManifest();
     return new ArrayList<ServiceData>(serviceDatas.values());
   }
-  
+
   public ServiceData getServiceData(String serviceClassName) {
     return serviceDatas.get(serviceClassName);
   }
