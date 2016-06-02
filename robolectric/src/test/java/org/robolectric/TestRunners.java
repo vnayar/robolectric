@@ -1,11 +1,9 @@
 package org.robolectric;
 
-import static org.robolectric.util.TestUtil.resourceFile;
-
 import org.junit.runners.model.InitializationError;
 import org.robolectric.annotation.Config;
-import org.robolectric.internal.ParallelUniverseInterface;
 import org.robolectric.internal.bytecode.ShadowMap;
+import org.robolectric.internal.ParallelUniverseInterface;
 import org.robolectric.manifest.AndroidManifest;
 import org.robolectric.res.FsFile;
 import org.robolectric.res.ResourceLoader;
@@ -13,6 +11,8 @@ import org.robolectric.shadows.ShadowSystemProperties;
 
 import java.lang.reflect.Method;
 import java.util.Locale;
+
+import static org.robolectric.util.TestUtil.resourceFile;
 
 public class TestRunners {
 
@@ -27,10 +27,6 @@ public class TestRunners {
           .addShadowClass(ShadowSystemProperties.class)
           .build();
     }
-
-    // @Override protected AndroidManifest createAppManifest(FsFile manifestFile, FsFile resDir, FsFile assetDir, String packageName) {
-    //   return null;
-    // }
 
     @Override
     protected AndroidManifest getAppManifest(Config config) {
@@ -77,11 +73,6 @@ public class TestRunners {
       DefaultRunnerWithApiVersion(Class<?> type, Integer apiVersion) throws InitializationError {
         super(type, apiVersion);
       }
-
-      // @Override
-      // protected AndroidManifest createAppManifest(FsFile manifestFile, FsFile resDir, FsFile assetDir, String packageName) {
-      //   return new AndroidManifest(resourceFile("TestAndroidManifest.xml"), resourceFile("res"), resourceFile("assets"), packageName);
-      // }
 
       @Override
       protected AndroidManifest getAppManifest(Config config) {

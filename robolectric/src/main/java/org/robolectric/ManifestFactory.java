@@ -1,6 +1,7 @@
 package org.robolectric;
 
-import org.jetbrains.annotations.NotNull;
+import com.google.common.annotations.VisibleForTesting;
+
 import org.junit.Ignore;
 import org.robolectric.annotation.*;
 import org.robolectric.annotation.Config;
@@ -15,7 +16,6 @@ import org.robolectric.util.ReflectionHelpers;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 import java.util.*;
 import java.util.ArrayList;
@@ -26,10 +26,15 @@ import java.util.List;
  * create an AndroidManifest for that environment.
  *
  * <p>The following build systems are currently supported:
- * - Maven
- * - Gradle
+ * <ul>
+ *   <li>Maven</li>
+ *   <li>Gradle</li>
+ * </ul>
  */
 public abstract class ManifestFactory {
+  private static final String DEFAULT_MANIFEST_NAME = "AndroidManifest.xml";
+
+  private ManifestFactory() {}
 
   /**
    * Detects what build system is in use and returns the appropriate ManifestFactory implementation.
@@ -49,10 +54,12 @@ public abstract class ManifestFactory {
   public abstract AndroidManifest create();
 
 
-  private static class GradleManifestFactory extends ManifestFactory {
+  @VisibleForTesting
+  static class GradleManifestFactory extends ManifestFactory {
     private final Config config;
 
-    private GradleManifestFactory(Config config) {
+    @VisibleForTesting
+    GradleManifestFactory(Config config) {
       this.config = config;
     }
 
@@ -93,9 +100,9 @@ public abstract class ManifestFactory {
       }
 
       if (FileFsFile.from(buildOutputDir, "manifests").exists()) {
-        manifest = FileFsFile.from(buildOutputDir, "manifests", "full", flavor, type, "AndroidManifest.xml");
+        manifest = FileFsFile.from(buildOutputDir, "manifests", "full", flavor, type, DEFAULT_MANIFEST_NAME);
       } else {
-        manifest = FileFsFile.from(buildOutputDir, "bundles", flavor, type, "AndroidManifest.xml");
+        manifest = FileFsFile.from(buildOutputDir, "bundles", flavor, type, DEFAULT_MANIFEST_NAME);
       }
 
       Logger.debug("Robolectric assets directory: " + assets.getPath());
@@ -144,13 +151,14 @@ public abstract class ManifestFactory {
     }
   }
 
+  @VisibleForTesting
   static class MavenManifestFactory extends ManifestFactory {
-    private static final String DEFAULT_MANIFEST_NAME = "AndroidManifest.xml";
     private static final Map<ManifestIdentifier, AndroidManifest> appManifestsByFile = new HashMap<>();
 
     private final Config config;
 
-    private MavenManifestFactory(Config config) {
+    @VisibleForTesting
+    MavenManifestFactory(Config config) {
       this.config = config;
     }
 
@@ -160,8 +168,8 @@ public abstract class ManifestFactory {
         return null;
       }
 
-      FsFile manifestFile = getBaseDir().join(config.manifest().equals(Config.DEFAULT)
-          ? MavenManifestFactory.DEFAULT_MANIFEST_NAME : config.manifest());
+      FsFile manifestFile = getBaseDir().join(config.manifest().equals(Config.DEFAULT_MANIFEST)
+          ? DEFAULT_MANIFEST_NAME : config.manifest());
       FsFile baseDir = manifestFile.getParent();
       FsFile resDir = baseDir.join(config.resourceDir());
       FsFile assetDir = baseDir.join(config.assetDir());
@@ -182,7 +190,6 @@ public abstract class ManifestFactory {
           appManifest = createAppManifest(manifestFile, resDir, assetDir, config.packageName());
           appManifestsByFile.put(identifier, appManifest);
         }
-        // TODO: Explain what this line does.
         appManifest.setLibraryManifests(MavenManifestFactory.createLibraryManifests(appManifest));
         return appManifest;
       }
@@ -316,17 +323,6 @@ public abstract class ManifestFactory {
         result = 31 * result + libraryDirs.hashCode();
         return result;
       }
-    }
-
-    private static <A extends Annotation> A defaultsFor(Class<A> annotation) {
-      return annotation.cast(
-          Proxy.newProxyInstance(annotation.getClassLoader(), new Class[] { annotation },
-              new InvocationHandler() {
-                public Object invoke(Object proxy, @NotNull Method method, Object[] args)
-                    throws Throwable {
-                  return method.getDefaultValue();
-                }
-              }));
     }
   }
 }

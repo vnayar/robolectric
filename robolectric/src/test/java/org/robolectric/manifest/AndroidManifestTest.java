@@ -33,7 +33,6 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 import org.robolectric.res.Fs;
-import org.robolectric.res.FsFile;
 import org.robolectric.res.ResourcePath;
 import org.robolectric.test.TemporaryFolder;
 
@@ -435,16 +434,4 @@ public class AndroidManifestTest {
     public void onReceive(Context context, Intent intent) {
     }
   }
-
-  // @Test
-  // public void shouldLoadLibraryManifests() throws Exception {
-  //   AndroidManifest manifest = newConfig("TestAndroidManifest.xml");
-  //   List<FsFile> libraries = new ArrayList<>();
-  //   libraries.add(resourceFile("lib1"));
-  //   manifest.setLibraryDirectories(libraries);
-  //
-  //   List<AndroidManifest> libraryManifests = manifest.getLibraryManifests();
-  //   assertEquals(1, libraryManifests.size());
-  //   assertEquals("org.robolectric.lib1", libraryManifests.get(0).getPackageName());
-  // }
 }

@@ -6,10 +6,6 @@ import org.w3c.dom.Document;
 
 import java.io.InputStream;
 
-/**
- * A wrapper for Android Resources.
- * @see {@link https://developer.android.com/guide/topics/resources/available-resources.html}
- */
 public interface ResourceLoader {
   String ANDROID_NS = Attribute.ANDROID_RES_NS_PREFIX + "android";
 

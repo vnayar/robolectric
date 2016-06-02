@@ -1,5 +1,30 @@
 package org.robolectric.manifest;
 
+import android.app.Activity;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
+import com.google.common.base.Preconditions;
+import org.robolectric.annotation.Config;
+import org.robolectric.res.FsFile;
+import org.robolectric.res.ResourceLoader;
+import org.robolectric.res.ResourcePath;
+import org.w3c.dom.Document;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
 import static android.content.pm.ApplicationInfo.FLAG_ALLOW_BACKUP;
 import static android.content.pm.ApplicationInfo.FLAG_ALLOW_CLEAR_USER_DATA;
 import static android.content.pm.ApplicationInfo.FLAG_ALLOW_TASK_REPARENTING;
@@ -15,29 +40,6 @@ import static android.content.pm.ApplicationInfo.FLAG_SUPPORTS_SCREEN_DENSITIES;
 import static android.content.pm.ApplicationInfo.FLAG_SUPPORTS_SMALL_SCREENS;
 import static android.content.pm.ApplicationInfo.FLAG_TEST_ONLY;
 import static android.content.pm.ApplicationInfo.FLAG_VM_SAFE_MODE;
-
-import android.app.Activity;
-
-import org.robolectric.res.FsFile;
-import org.robolectric.res.ResourceLoader;
-import org.robolectric.res.ResourcePath;
-import org.w3c.dom.Document;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 
 /**
  * A wrapper for an Android App Manifest, which represents information about one's App to an Android system.
@@ -523,6 +525,7 @@ public class AndroidManifest {
   }
 
   public void setLibraryManifests(List<AndroidManifest> libraryManifests) {
+    Preconditions.checkNotNull(libraryManifests);
     this.libraryManifests = libraryManifests;
   }
 

@@ -525,6 +525,8 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner {
     }
   }
 
+  // TODO: Instead of creating a dynamic proxy to set up a default return of the Config.class annotation,
+  //   instead create a default constructor for Config.Implementation() which returns the default values of its fields.
   private static <A extends Annotation> A defaultsFor(Class<A> annotation) {
     return annotation.cast(
         Proxy.newProxyInstance(annotation.getClassLoader(), new Class[] { annotation },

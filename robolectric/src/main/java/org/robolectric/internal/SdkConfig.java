@@ -1,7 +1,6 @@
 package org.robolectric.internal;
 
 import android.os.Build;
-
 import org.robolectric.internal.dependency.DependencyJar;
 
 import java.io.IOException;
@@ -12,9 +11,6 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 
-/**
- * Robolectric specific settings associated with an Android SDK version.
- */
 public class SdkConfig {
   private static final String ROBOLECTRIC_VERSION;
   private static final Map<Integer, SdkVersion> SUPPORTED_APIS;
