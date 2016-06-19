@@ -1,26 +1,25 @@
 package org.robolectric;
 
-import org.robolectric.annotation.*;
 import org.robolectric.annotation.Config;
-import org.robolectric.internal.bytecode.*;
 import org.robolectric.manifest.AndroidManifest;
 import org.robolectric.res.FileFsFile;
 import org.robolectric.util.Logger;
 import org.robolectric.util.ReflectionHelpers;
 
 import java.io.File;
-import java.lang.reflect.*;
-import java.util.*;
 
+/**
+ * Logic to build an App Manifest while using the Gradle build tool.
+ *
+ * @see <a href="http://gradle.org/">Gradle Homepage</a>
+ */
 /* package */ class GradleManifestFactory extends ManifestFactory {
-  private final Config config;
-
   protected GradleManifestFactory(Config config) {
-    this.config = config;
+    super(config);
   }
 
   @Override
-  public AndroidManifest create() {
+  public AndroidManifest createAppManifest() {
     if (config.constants() == Void.class) {
       Logger.error("Field 'constants' not specified in @Config annotation");
       Logger.error("This is required when using RobolectricGradleTestRunner!");

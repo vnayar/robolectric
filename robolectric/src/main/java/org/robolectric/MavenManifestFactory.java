@@ -1,9 +1,7 @@
 package org.robolectric;
 
 import org.junit.Ignore;
-import org.robolectric.annotation.*;
 import org.robolectric.annotation.Config;
-import org.robolectric.internal.bytecode.*;
 import org.robolectric.manifest.AndroidManifest;
 import org.robolectric.res.Fs;
 import org.robolectric.res.FsFile;
@@ -11,22 +9,27 @@ import org.robolectric.util.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.*;
-import java.util.*;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
+/**
+ * Logic to build an App Manifest while using the Maven build tool.
+ *
+ * @see <a href="https://maven.apache.org/">Maven Homepage</a>
+ */
 /* package */ class MavenManifestFactory extends ManifestFactory {
   private static final Map<ManifestIdentifier, AndroidManifest> appManifestsByFile = new HashMap<>();
 
-  private final Config config;
-
   protected MavenManifestFactory(Config config) {
-    this.config = config;
+    super(config);
   }
 
   @Override
-  public AndroidManifest create() {
+  public AndroidManifest createAppManifest() {
     if (config.manifest().equals(Config.NONE)) {
       return null;
     }

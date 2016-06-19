@@ -1,5 +1,7 @@
 package org.robolectric;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.robolectric.annotation.Config;
@@ -8,8 +10,6 @@ import org.robolectric.res.FileFsFile;
 
 import java.io.File;
 import java.io.IOException;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class RobolectricGradleTestRunnerTest {
   @Rule
@@ -41,11 +41,12 @@ public class RobolectricGradleTestRunnerTest {
   private static String convertPath(String path) {
     return path.replace('/', File.separatorChar);
   }
-  
+
   @Test
   public void getAppManifest_forApplications_shouldCreateManifest() throws Exception {
     final RobolectricGradleTestRunner runner = new RobolectricGradleTestRunner(ConstantsTest.class);
-    final AndroidManifest manifest = runner.getAppManifest(runner.getConfig(ConstantsTest.class.getMethod("withoutAnnotation")));
+    final AndroidManifest manifest = runner.getManifestFactory(
+        runner.getConfig(ConstantsTest.class.getMethod("withoutAnnotation"))).createAppManifest();
 
     assertThat(manifest.getPackageName()).isEqualTo("org.sandwich.foo");
     assertThat(manifest.getResDirectory().getPath()).isEqualTo(convertPath("build/intermediates/res/flavor1/type1"));
@@ -60,7 +61,9 @@ public class RobolectricGradleTestRunnerTest {
     delete(FileFsFile.from("build", "intermediates", "manifests").getFile());
 
     final RobolectricGradleTestRunner runner = new RobolectricGradleTestRunner(ConstantsTest.class);
-    final AndroidManifest manifest = runner.getAppManifest(runner.getConfig(ConstantsTest.class.getMethod("withoutAnnotation")));
+    final AndroidManifest manifest = runner.getManifestFactory(
+        runner.getConfig(ConstantsTest.class.getMethod("withoutAnnotation")))
+        .createAppManifest();
 
     assertThat(manifest.getPackageName()).isEqualTo("org.sandwich.foo");
     assertThat(manifest.getResDirectory().getPath()).isEqualTo(convertPath("build/intermediates/bundles/flavor1/type1/res"));
@@ -71,7 +74,10 @@ public class RobolectricGradleTestRunnerTest {
   @Test
   public void getAppManifest_shouldCreateManifestWithMethodOverrides() throws Exception {
     final RobolectricGradleTestRunner runner = new RobolectricGradleTestRunner(ConstantsTest.class);
-    final AndroidManifest manifest = runner.getAppManifest(runner.getConfig(ConstantsTest.class.getMethod("withOverrideAnnotation")));
+    final AndroidManifest manifest =
+        runner.getManifestFactory(
+            runner.getConfig(ConstantsTest.class.getMethod("withOverrideAnnotation")))
+        .createAppManifest();
 
     assertThat(manifest.getPackageName()).isEqualTo("org.sandwich.bar");
     assertThat(manifest.getResDirectory().getPath()).isEqualTo(convertPath("build/intermediates/res/flavor2/type2"));
@@ -82,7 +88,10 @@ public class RobolectricGradleTestRunnerTest {
   @Test
   public void getAppManifest_withBuildDirOverride_shouldCreateManifest() throws Exception {
     final RobolectricGradleTestRunner runner = new RobolectricGradleTestRunner(BuildDirTest.class);
-    final AndroidManifest manifest = runner.getAppManifest(runner.getConfig(BuildDirTest.class.getMethod("withoutAnnotation")));
+    final AndroidManifest manifest =
+        runner.getManifestFactory(
+            runner.getConfig(BuildDirTest.class.getMethod("withoutAnnotation")))
+        .createAppManifest();
 
     assertThat(manifest.getPackageName()).isEqualTo("org.sandwich.foo");
     assertThat(manifest.getResDirectory().getPath()).isEqualTo(convertPath("custom_build/intermediates/res/flavor1/type1"));
@@ -93,7 +102,10 @@ public class RobolectricGradleTestRunnerTest {
   @Test
   public void getAppManifest_withPackageNameOverride_shouldCreateManifest() throws Exception {
     final RobolectricGradleTestRunner runner = new RobolectricGradleTestRunner(PackageNameTest.class);
-    final AndroidManifest manifest = runner.getAppManifest(runner.getConfig(PackageNameTest.class.getMethod("withoutAnnotation")));
+    final AndroidManifest manifest =
+        runner.getManifestFactory(
+            runner.getConfig(PackageNameTest.class.getMethod("withoutAnnotation")))
+        .createAppManifest();
 
     assertThat(manifest.getPackageName()).isEqualTo("fake.package.name");
     assertThat(manifest.getResDirectory().getPath()).isEqualTo(convertPath("build/intermediates/res/flavor1/type1"));
@@ -104,7 +116,10 @@ public class RobolectricGradleTestRunnerTest {
   @Test
   public void getAppManifest_withAbiSplitOverride_shouldCreateManifest() throws Exception {
     final RobolectricGradleTestRunner runner = new RobolectricGradleTestRunner(AbiSplitTest.class);
-    final AndroidManifest manifest = runner.getAppManifest(runner.getConfig(AbiSplitTest.class.getMethod("withoutAnnotation")));
+    final AndroidManifest manifest =
+        runner.getManifestFactory(
+            runner.getConfig(AbiSplitTest.class.getMethod("withoutAnnotation")))
+        .createAppManifest();
 
     assertThat(manifest.getPackageName()).isEqualTo("org.sandwich.foo");
     assertThat(manifest.getResDirectory().getPath()).isEqualTo(convertPath("build/intermediates/res/flavor1/type1"));
@@ -117,7 +132,10 @@ public class RobolectricGradleTestRunnerTest {
     FileFsFile.from("build", "intermediates", "res", "merged").getFile().mkdirs();
 
     final RobolectricGradleTestRunner runner = new RobolectricGradleTestRunner(PackageNameTest.class);
-    final AndroidManifest manifest = runner.getAppManifest(runner.getConfig(PackageNameTest.class.getMethod("withoutAnnotation")));
+    final AndroidManifest manifest =
+        runner.getManifestFactory(
+            runner.getConfig(PackageNameTest.class.getMethod("withoutAnnotation")))
+        .createAppManifest();
 
     assertThat(manifest.getPackageName()).isEqualTo("fake.package.name");
     assertThat(manifest.getResDirectory().getPath()).isEqualTo(convertPath("build/intermediates/res/merged/flavor1/type1"));
@@ -126,16 +144,12 @@ public class RobolectricGradleTestRunnerTest {
   }
 
   @Test
-  public void getAppManifest_shouldThrowException_whenConstantsNotSpecified() throws Exception {
-    final RobolectricGradleTestRunner runner = new RobolectricGradleTestRunner(NoConstantsTest.class);
-    exception.expect(RuntimeException.class);
-    runner.getAppManifest(runner.getConfig(NoConstantsTest.class.getMethod("withoutAnnotation")));
-  }
-
-  @Test
   public void rClassShouldBeInTheSamePackageAsBuildConfig() throws Exception {
     RobolectricGradleTestRunner runner = new RobolectricGradleTestRunner(RFileTest.class);
-    AndroidManifest manifest = runner.getAppManifest(runner.getConfig(RFileTest.class.getMethod("withoutAnnotation")));
+    AndroidManifest manifest =
+        runner.getManifestFactory(
+            runner.getConfig(RFileTest.class.getMethod("withoutAnnotation")))
+        .createAppManifest();
     assertThat(manifest.getRClass().getPackage().getName()).isEqualTo("org.robolectric.gradleapp");
   }
 

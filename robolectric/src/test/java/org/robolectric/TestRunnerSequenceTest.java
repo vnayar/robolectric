@@ -1,5 +1,9 @@
 package org.robolectric;
 
+import static org.assertj.core.api.Assertions.fail;
+import static org.junit.Assert.assertTrue;
+import static org.robolectric.util.TestUtil.resourceFile;
+
 import android.app.Application;
 
 import org.junit.Test;
@@ -8,17 +12,13 @@ import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.model.InitializationError;
 import org.robolectric.annotation.Config;
-import org.robolectric.internal.bytecode.InstrumentationConfiguration;
 import org.robolectric.internal.SdkEnvironment;
+import org.robolectric.internal.bytecode.InstrumentationConfiguration;
+import org.robolectric.internal.dependency.DependencyResolver;
 import org.robolectric.manifest.AndroidManifest;
-import org.robolectric.res.FsFile;
 import org.robolectric.util.Transcript;
 
 import java.lang.reflect.Method;
-
-import static org.assertj.core.api.Assertions.fail;
-import static org.junit.Assert.assertTrue;
-import static org.robolectric.util.TestUtil.resourceFile;
 
 public class TestRunnerSequenceTest {
   public static class StateHolder {
@@ -48,10 +48,20 @@ public class TestRunnerSequenceTest {
   @Test public void whenNoAppManifest_shouldRunThingsInTheRightOrder() throws Exception {
     StateHolder.transcript = new Transcript();
     assertNoFailures(run(new Runner(SimpleTest.class) {
-      @Override protected AndroidManifest getAppManifest(Config config) {
-        return null;
-      }
-    }));
+        @Override
+        protected ManifestFactory getManifestFactory(Config config) {
+          return new ManifestFactory(config) {
+            @Override
+            public AndroidManifest createAppManifest() {
+              return null;
+            }
+            @Override
+            public DependencyResolver getJarResolver() {
+              return null;
+            }
+          };
+        }
+      }));
     StateHolder.transcript.assertEventsSoFar(
         "configureShadows",
         "createApplication",
@@ -100,15 +110,26 @@ public class TestRunnerSequenceTest {
       super(testClass);
     }
 
-    @Override public InstrumentationConfiguration createClassLoaderConfig(Config config) {
-      return InstrumentationConfiguration.newBuilder()
-          .doNotAcquireClass(StateHolder.class.getName())
-          .build();
-    }
-
     @Override
-    protected AndroidManifest getAppManifest(Config config) {
-      return new AndroidManifest(resourceFile("TestAndroidManifest.xml"), resourceFile("res"), resourceFile("assets"));
+    protected ManifestFactory getManifestFactory(Config config) {
+      return new ManifestFactory(config) {
+        @Override
+        public AndroidManifest createAppManifest() {
+          return new AndroidManifest(resourceFile("TestAndroidManifest.xml"), resourceFile("res"), resourceFile("assets"));
+        }
+
+        @Override
+        public InstrumentationConfiguration createClassLoaderConfig() {
+          return InstrumentationConfiguration.newBuilder()
+              .doNotAcquireClass(StateHolder.class.getName())
+              .build();
+        }
+
+        @Override
+        public DependencyResolver getJarResolver() {
+          return null;
+        }
+      };
     }
 
     @Override protected Class<? extends TestLifecycle> getTestLifecycleClass() {

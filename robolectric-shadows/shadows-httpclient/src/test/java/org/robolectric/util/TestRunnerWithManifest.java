@@ -1,6 +1,7 @@
 package org.robolectric.util;
 
 import org.junit.runners.model.InitializationError;
+import org.robolectric.ManifestFactory;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 import org.robolectric.manifest.AndroidManifest;
@@ -28,7 +29,13 @@ public class TestRunnerWithManifest extends RobolectricTestRunner {
   }
 
   @Override
-  protected AndroidManifest getAppManifest(Config config) {
-    return new AndroidManifest(resourceFile("AndroidManifest.xml"), resourceFile("res"), resourceFile("assets"));
+  protected ManifestFactory getManifestFactory(Config config) {
+    return new ManifestFactory(config) {
+      @Override
+      public AndroidManifest createAppManifest() {
+        return new AndroidManifest(
+            resourceFile("AndroidManifest.xml"), resourceFile("res"), resourceFile("assets"));
+      }
+    };
   }
 }

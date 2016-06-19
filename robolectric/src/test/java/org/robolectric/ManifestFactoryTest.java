@@ -26,7 +26,7 @@ public class ManifestFactoryTest {
     properties.setProperty("libraries", "lib1");
     Config config = Config.Implementation.fromProperties(properties);
     ManifestFactory manifestFactory = ManifestFactory.newManifestFactory(config);
-    AndroidManifest manifest = manifestFactory.create();
+    AndroidManifest manifest = manifestFactory.createAppManifest();
 
     List<AndroidManifest> libraryManifests = manifest.getLibraryManifests();
     assertEquals(1, libraryManifests.size());
@@ -41,7 +41,7 @@ public class ManifestFactoryTest {
     properties.setProperty("assetDir", "assets");
     Config config = Config.Implementation.fromProperties(properties);
     ManifestFactory manifestFactory = ManifestFactory.newManifestFactory(config);
-    AndroidManifest appManifest = manifestFactory.create();
+    AndroidManifest appManifest = manifestFactory.createAppManifest();
 
     // This intentionally loads from the non standard resources/project.properties
     List<String> resourcePaths = stringify(appManifest.getIncludedResourcePaths());

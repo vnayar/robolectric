@@ -1,7 +1,10 @@
 package org.robolectric;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import android.app.Application;
 import android.os.Build;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.TestOnly;
 import org.junit.AfterClass;
@@ -18,30 +21,23 @@ import org.junit.runners.model.Statement;
 import org.junit.runners.model.TestClass;
 import org.robolectric.annotation.*;
 import org.robolectric.internal.InstrumentingClassLoaderFactory;
-import org.robolectric.internal.bytecode.*;
-import org.robolectric.internal.dependency.CachedDependencyResolver;
-import org.robolectric.internal.dependency.DependencyResolver;
-import org.robolectric.internal.dependency.LocalDependencyResolver;
-import org.robolectric.internal.dependency.MavenDependencyResolver;
 import org.robolectric.internal.ParallelUniverse;
 import org.robolectric.internal.ParallelUniverseInterface;
 import org.robolectric.internal.SdkConfig;
 import org.robolectric.internal.SdkEnvironment;
+import org.robolectric.internal.bytecode.*;
+import org.robolectric.internal.dependency.DependencyResolver;
 import org.robolectric.manifest.AndroidManifest;
-import org.robolectric.res.Fs;
 import org.robolectric.res.FsFile;
 import org.robolectric.res.OverlayResourceLoader;
 import org.robolectric.res.PackageResourceLoader;
 import org.robolectric.res.ResourceExtractor;
-import org.robolectric.res.ResourceIndex;
 import org.robolectric.res.ResourceLoader;
 import org.robolectric.res.ResourcePath;
 import org.robolectric.res.RoutingResourceLoader;
-import org.robolectric.util.Logger;
-import org.robolectric.util.ReflectionHelpers;
 import org.robolectric.util.Pair;
+import org.robolectric.util.ReflectionHelpers;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
@@ -88,30 +84,6 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner {
     }
   }
 
-  protected DependencyResolver getJarResolver() {
-    if (dependencyResolver == null) {
-      if (Boolean.getBoolean("robolectric.offline")) {
-        String dependencyDir = System.getProperty("robolectric.dependency.dir", ".");
-        dependencyResolver = new LocalDependencyResolver(new File(dependencyDir));
-      } else {
-        File cacheDir = new File(new File(System.getProperty("java.io.tmpdir")), "robolectric");
-
-        if (cacheDir.exists() || cacheDir.mkdir()) {
-          Logger.info("Dependency cache location: %s", cacheDir.getAbsolutePath());
-          dependencyResolver = new CachedDependencyResolver(new MavenDependencyResolver(), cacheDir, 60 * 60 * 24 * 1000);
-        } else {
-          dependencyResolver = new MavenDependencyResolver();
-        }
-      }
-    }
-
-    return dependencyResolver;
-  }
-
-  public InstrumentationConfiguration createClassLoaderConfig(Config config) {
-    return InstrumentationConfiguration.newBuilder().withConfig(config).build();
-  }
-
   protected Class<? extends TestLifecycle> getTestLifecycleClass() {
     return DefaultTestLifecycle.class;
   }
@@ -151,21 +123,34 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner {
     }
   }
 
+  @VisibleForTesting
+  protected ManifestFactory getManifestFactory(Config config) {
+    return ManifestFactory.newManifestFactory(config);
+  }
+
   @Override
   protected void runChild(FrameworkMethod method, RunNotifier notifier) {
     Description description = describeChild(method);
     EachTestNotifier eachNotifier = new EachTestNotifier(notifier, description);
 
     final Config config = getConfig(method.getMethod());
+    ManifestFactory manifestFactory = getManifestFactory(config);
+    // TODO(vnayar): Create a finer-grained way for these factories to configure System properties
+    // that RobolectricTestRunner responds to.
+    manifestFactory.setProperties();
+
     if (shouldIgnore(method, config)) {
       eachNotifier.fireTestIgnored();
     } else if(shouldRunApiVersion(config)) {
       eachNotifier.fireTestStarted();
       try {
-        AndroidManifest appManifest = getAppManifest(config);
-        InstrumentingClassLoaderFactory instrumentingClassLoaderFactory = new InstrumentingClassLoaderFactory(createClassLoaderConfig(config), getJarResolver());
-        SdkEnvironment sdkEnvironment = instrumentingClassLoaderFactory.getSdkEnvironment(new SdkConfig(pickSdkVersion(config, appManifest)));
-        methodBlock(method, config, appManifest, sdkEnvironment).evaluate();
+        AndroidManifest appManifest = manifestFactory.createAppManifest();
+        InstrumentingClassLoaderFactory instrumentingClassLoaderFactory =
+            new InstrumentingClassLoaderFactory(
+                manifestFactory.createClassLoaderConfig(), manifestFactory.getJarResolver());
+        SdkEnvironment sdkEnvironment = instrumentingClassLoaderFactory.getSdkEnvironment(
+            new SdkConfig(manifestFactory.pickSdkVersion(appManifest)));
+        methodBlock(method, config, appManifest, sdkEnvironment, manifestFactory).evaluate();
       } catch (AssumptionViolatedException e) {
         eachNotifier.addFailedAssumption(e);
       } catch (Throwable e) {
@@ -186,7 +171,12 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner {
 
   private ParallelUniverseInterface parallelUniverseInterface;
 
-  Statement methodBlock(final FrameworkMethod method, final Config config, final AndroidManifest appManifest, final SdkEnvironment sdkEnvironment) {
+  Statement methodBlock(
+      final FrameworkMethod method,
+      final Config config,
+      final AndroidManifest appManifest,
+      final SdkEnvironment sdkEnvironment,
+      final ManifestFactory manifestFactory) {
     return new Statement() {
       @Override
       public void evaluate() throws Throwable {
@@ -220,14 +210,14 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner {
             parallelUniverseInterface.resetStaticState(config);
             parallelUniverseInterface.setSdkConfig(sdkEnvironment.getSdkConfig());
 
-            int sdkVersion = pickSdkVersion(config, appManifest);
+            int sdkVersion = manifestFactory.pickSdkVersion(appManifest);
             ReflectionHelpers.setStaticField(sdkEnvironment.bootstrappedClass(Build.VERSION.class),
                 "SDK_INT", sdkVersion);
             SdkConfig sdkConfig = new SdkConfig(sdkVersion);
             ReflectionHelpers.setStaticField(sdkEnvironment.bootstrappedClass(Build.VERSION.class),
                 "RELEASE", sdkConfig.getAndroidVersion());
 
-            ResourceLoader systemResourceLoader = sdkEnvironment.getSystemResourceLoader(getJarResolver());
+            ResourceLoader systemResourceLoader = sdkEnvironment.getSystemResourceLoader(manifestFactory.getJarResolver());
             parallelUniverseInterface.setUpApplicationState(bootstrappedMethod, testLifecycle, systemResourceLoader, appManifest, config);
             testLifecycle.beforeTest(bootstrappedMethod);
           } catch (Exception e) {
@@ -278,10 +268,6 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner {
     } catch (InitializationError initializationError) {
       throw new RuntimeException(initializationError);
     }
-  }
-
-  protected AndroidManifest getAppManifest(Config config) {
-    return ManifestFactory.newManifestFactory(config).create();
   }
 
   public Config getConfig(Method method) {
@@ -361,18 +347,6 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner {
       }
     }
     return classHandler;
-  }
-
-  protected int pickSdkVersion(Config config, AndroidManifest manifest) {
-    if (config != null && config.sdk().length > 1) {
-      throw new IllegalArgumentException("RobolectricTestRunner does not support multiple values for @Config.sdk");
-    } else if (config != null && config.sdk().length == 1) {
-      return config.sdk()[0];
-    } else if (manifest != null) {
-      return manifest.getTargetSdkVersion();
-    } else {
-      return SdkConfig.FALLBACK_SDK_VERSION;
-    }
   }
 
   private ParallelUniverseInterface getHooksInterface(SdkEnvironment sdkEnvironment) {

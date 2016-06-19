@@ -1,7 +1,5 @@
 package org.robolectric;
 
-import android.os.Build;
-
 import org.junit.runner.Runner;
 import org.junit.runners.Suite;
 import org.junit.runners.model.FrameworkMethod;
@@ -64,10 +62,10 @@ public class MultiApiRobolectricTestRunner extends Suite {
       return false;
     }
 
-    @Override
-    protected int pickSdkVersion(Config config, AndroidManifest appManifest) {
-      return apiVersion;
-    }
+    // @Override
+    // protected int pickSdkVersion(Config config, AndroidManifest appManifest) {
+    //   return apiVersion;
+    // }
 
     @Override
     protected HelperTestRunner getHelperTestRunner(Class bootstrappedTestClass) {

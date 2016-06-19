@@ -4,9 +4,6 @@ import static org.robolectric.util.TestUtil.resourceFile;
 
 import org.junit.runners.model.InitializationError;
 import org.robolectric.annotation.Config;
-import org.robolectric.internal.ParallelUniverseInterface;
-import org.robolectric.internal.bytecode.ShadowMap;
-import org.robolectric.manifest.AndroidManifest;
 
 import java.util.Locale;
 import java.util.Properties;
@@ -22,10 +19,10 @@ public class TestRunners {
     }
 
     @Override
-    protected AndroidManifest getAppManifest(Config config) {
+    protected ManifestFactory getManifestFactory(Config config) {
       Properties properties = new Properties();
       properties.put("manifest", resourceFile("TestAndroidManifest.xml").toString());
-      return super.getAppManifest(
+      return super.getManifestFactory(
           new Config.Implementation(config, Config.Implementation.fromProperties(properties)));
     }
   }
@@ -48,10 +45,10 @@ public class TestRunners {
       }
 
       @Override
-      protected AndroidManifest getAppManifest(Config config) {
+      protected ManifestFactory getManifestFactory(Config config) {
         Properties properties = new Properties();
         properties.put("manifest", "src/test/resources/TestAndroidManifest.xml");
-        return super.getAppManifest(
+        return super.getManifestFactory(
             new Config.Implementation(config, Config.Implementation.fromProperties(properties)));
       }
     }
